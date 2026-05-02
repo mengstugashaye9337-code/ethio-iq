@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:ethio_iq/core/theme/app_theme.dart';
 import 'package:ethio_iq/core/constants/app_constants.dart';
 import 'package:ethio_iq/core/extensions/gradient_extension.dart';
-import 'package:ethio_iq/features/tutor_profile/presentation/screens/tutor_profile_screen.dart';
+import 'package:ethio_iq/features/tutor_profile/presentation/screens/tutor_list_screen.dart';
 import 'package:ethio_iq/features/bookings/presentation/screens/my_requests_screen.dart';
+import 'package:ethio_iq/features/bookings/presentation/screens/admin_panel_screen.dart';
+import 'package:ethio_iq/features/subjects/presentation/screens/subject_library_screen.dart';
 
 /// Dashboard Screen - Main hub after login
 ///
@@ -26,6 +28,14 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  late bool _isAdmin;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if user is admin
+    _isAdmin = widget.userName == 'Mengstu_Admin';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,18 +72,121 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // "Selam, $userName!" - Ethiopian greeting
-                  Text(
-                    'Selam, ${widget.userName}!', // ← Data: userName flows here from LoginScreen
-                    style: AppTheme.titleLarge.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: AppTheme.spacingS),
-                  Text(
-                    'Welcome to your learning journey',
-                    style: AppTheme.bodyMedium.copyWith(color: Colors.white70),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Selam, ${widget.userName}!', // ← Data: userName flows here from LoginScreen
+                              style: AppTheme.titleLarge.copyWith(
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: AppTheme.spacingS),
+                            Text(
+                              _isAdmin
+                                  ? 'Welcome to Admin Panel'
+                                  : 'Welcome to your learning journey',
+                              style: AppTheme.bodyMedium.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_isAdmin)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTheme.spacingS,
+                            vertical: AppTheme.spacingXS,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusS,
+                            ),
+                          ),
+                          child: Text(
+                            '👨‍💼 Admin',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: AppTheme.spacingXL),
+
+            // ============================================
+            // ADMIN PANEL BUTTON (Hidden entry point)
+            // ============================================
+            if (_isAdmin)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppTheme.paddingStandard),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.admin_panel_settings,
+                      color: Colors.orange,
+                      size: 28,
+                    ),
+                    const SizedBox(width: AppTheme.spacingL),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Admin Control Center',
+                            style: AppTheme.titleSmall.copyWith(
+                              color: Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(height: AppTheme.spacingXS),
+                          Text(
+                            'Manage requests and assign tutors',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: Colors.orange.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminPanelScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(
+                        'Open',
+                        style: AppTheme.buttonText.copyWith(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: AppTheme.spacingXL),
 
             // ============================================
@@ -143,7 +256,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: double.infinity,
                     height: 44,
                     child: OutlinedButton(
-                      onPressed: () => _showTutorRequestDialog(context),
+                      onPressed: () => _handleRequestTutor(context),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.white, width: 1.5),
                         shape: RoundedRectangleBorder(
@@ -224,9 +337,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildStatItem('12', 'Tutors', Icons.people),
-                  _buildStatItem('5', 'Subjects', Icons.book),
-                  _buildStatItem('2', 'Requests', Icons.assignment),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TutorListScreen(),
+                        ),
+                      );
+                    },
+                    child: _buildStatItem('12', 'Tutors', Icons.people),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SubjectLibraryScreen(),
+                        ),
+                      );
+                    },
+                    child: _buildStatItem('5', 'Subjects', Icons.book),
+                  ),
                 ],
               ),
             ),
@@ -235,13 +367,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // ============================================
             // VIEW TUTORS BUTTON
             // ============================================
-            /// This button navigates to TutorProfileScreen
+            /// This button navigates to TutorListScreen
             /// Uses AppTheme.elevatedButtonStyle - no hardcoded colors!
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: () => _navigateToTutorProfile(context),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TutorListScreen(),
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.search, color: Colors.white),
                 label: Text('View Tutors', style: AppTheme.buttonText),
                 style: AppTheme.elevatedButtonStyle,
@@ -298,25 +437,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Handle request tutor - Check login status
+  void _handleRequestTutor(BuildContext context) {
+    // Check if user is registered (userName is not empty and not default)
+    if (widget.userName.isEmpty || widget.userName == 'Guest') {
+      // Show login/register requirement dialog
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Registration Required', style: AppTheme.titleMedium),
+            content: Text(
+              'Please register or log in to submit a tutor request. This ensures we can match you with the perfect tutor and maintain quality standards.',
+              style: AppTheme.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Later',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to login/register screen
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Login screen coming soon!')),
+                  );
+                },
+                style: AppTheme.elevatedButtonStyle,
+                child: Text('Register', style: AppTheme.buttonText),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // User is logged in, proceed with request
+      _showTutorRequestDialog(context);
+    }
+  }
+
   /// ============================================
-  /// NAVIGATOR.PUSH - Moving to Tutor Profile
+  /// NAVIGATOR.PUSH - Moving to Tutor List
   /// ============================================
   /// How it works:
-  /// 1. User clicks "View Tutors" button
-  /// 2. Navigator.push() adds TutorProfileScreen to the stack
-  /// 3. Pass tutor data via constructor (name, subject, rating, price)
-  /// 4. User can navigate back with back button or swipe
-  void _navigateToTutorProfile(BuildContext context) {
+  /// 1. User clicks "View Tutors" button or "12 Tutors" card
+  /// 2. Navigator.push() adds TutorListScreen to the stack
+  /// 3. Shows top ranked tutors and all tutors with pagination
+  /// 4. User can tap individual tutor to see profile
+  void _navigateToTutorList(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const TutorProfileScreen(
-          name: 'Dr. Alemayehu',
-          subject: 'Mathematics',
-          rating: 4.8,
-          price: 500,
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => const TutorListScreen()),
     );
   }
 
@@ -332,7 +507,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         break;
       case 1:
         // Tutors
-        _navigateToTutorProfile(context);
+        _navigateToTutorList(context);
         break;
       case 2:
         // Requests
