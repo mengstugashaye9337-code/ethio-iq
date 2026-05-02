@@ -1,0 +1,5 @@
+package com.ethioiq.ethio_iq
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
