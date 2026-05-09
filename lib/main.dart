@@ -1,33 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:ethio_iq/core/theme/app_theme.dart';
 import 'package:ethio_iq/features/auth/presentation/screens/login_screen.dart';
 
 void main() {
-  runApp(const EthioIQApp());
+  runApp(const MyApp());
 }
 
-/// Ethio IQ Main Application
-/// 
-/// Initializes AppTheme.themeData for Material 3 consistency
-class EthioIQApp extends StatelessWidget {
-  const EthioIQApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    const primaryBlue = Color(0xFF1976D2);
+
     return MaterialApp(
-      title: 'Ethio IQ',
       debugShowCheckedModeBanner: false,
-      
-      // ============================================
-      // THEME INITIALIZATION
-      // ============================================
-      /// AppTheme.themeData applies:
-      /// - Material 3 design system
-      /// - Primary blue color scheme
-      /// - Consistent card, button, input decorations
-      theme: AppTheme.themeData,
-      
-      // Start with LoginScreen - user enters name → navigates to Dashboard
+      title: 'Ethio IQ',
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.fromSeed(seedColor: primaryBlue),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: primaryBlue,
+          foregroundColor: Colors.white,
+          centerTitle: true,
+          elevation: 0,
+        ),
+      ),
       home: const LoginScreen(),
     );
   }

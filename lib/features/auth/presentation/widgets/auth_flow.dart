@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ethio_iq/core/theme/app_theme.dart';
-import 'package:ethio_iq/features/auth/data/user_model.dart';
+import 'package:ethio_iq/core/models/user_model.dart';
 
 /// Auth Service - manages user authentication state
 /// 

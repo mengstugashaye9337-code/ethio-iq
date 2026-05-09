@@ -147,17 +147,8 @@ class _SubjectLibraryScreenState extends State<SubjectLibraryScreen> {
         setState(() {
           selectedSubject = subject['name'];
         });
-        // TODO: Navigate to tutor list filtered by this subject
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Tutors for ${subject['name']} coming soon!',
-              style: AppTheme.bodyMedium.copyWith(color: Colors.white),
-            ),
-            backgroundColor: AppTheme.primaryBlue,
-            duration: const Duration(milliseconds: 800),
-          ),
-        );
+        // Navigate to request match form with subject pre-filled
+        _navigateToRequestMatch(subject['name']);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -196,6 +187,152 @@ class _SubjectLibraryScreenState extends State<SubjectLibraryScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Navigate to request match form with subject pre-filled
+  void _navigateToRequestMatch(String subject) {
+    final gradeController = TextEditingController();
+    final locationController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Request a Tutor Match', style: AppTheme.titleMedium),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Pre-filled subject
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.paddingStandard),
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundLight,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.subject, color: AppTheme.primaryBlue),
+                      const SizedBox(width: AppTheme.spacingM),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Subject',
+                              style: AppTheme.bodySmall.copyWith(
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                            Text(
+                              subject,
+                              style: AppTheme.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingM),
+                TextField(
+                  controller: gradeController,
+                  decoration: InputDecoration(
+                    labelText: 'Grade Level',
+                    hintText: 'e.g., Grade 10, High School',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingM),
+                TextField(
+                  controller: locationController,
+                  decoration: InputDecoration(
+                    labelText: 'Location',
+                    hintText: 'e.g., Addis Ababa, Bole',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingL),
+                Text(
+                  'Note: In Ethiopia, one tutor covers all subjects. We\'ll match you with the best available tutor for your needs.',
+                  style: AppTheme.bodySmall.copyWith(
+                    color: AppTheme.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (gradeController.text.isNotEmpty &&
+                    locationController.text.isNotEmpty) {
+                  _submitTutorRequest(
+                    context,
+                    subject,
+                    gradeController.text,
+                    locationController.text,
+                  );
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Please fill in grade level and location',
+                        style: AppTheme.bodyMedium.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: AppTheme.warningColor,
+                    ),
+                  );
+                }
+              },
+              style: AppTheme.elevatedButtonStyle,
+              child: Text('Request Match', style: AppTheme.buttonText),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Submit tutor request
+  void _submitTutorRequest(
+    BuildContext context,
+    String subject,
+    String grade,
+    String location,
+  ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Tutor match request submitted for $subject! Ethio IQ will find the perfect tutor for you.',
+          style: AppTheme.bodyMedium.copyWith(color: Colors.white),
+        ),
+        backgroundColor: AppTheme.successColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusM),
         ),
       ),
     );

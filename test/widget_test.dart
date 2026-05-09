@@ -11,9 +11,9 @@ import 'package:ethio_iq/main.dart';
 void main() {
   testWidgets('Ethio IQ app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const EthioIQApp());
+    await tester.pumpWidget(const MyApp());
 
     // Verify that our app starts with the dashboard
-    expect(find.text('Selam, Mengstu!'), findsOneWidget);
+    expect(find.text('Selam, Guest!'), findsOneWidget);
   });
 }

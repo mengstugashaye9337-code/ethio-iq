@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:ethio_iq/core/theme/app_theme.dart';
+import 'package:ethio_iq/features/bookings/data/booking_repository.dart';
+import 'package:ethio_iq/core/models/booking_request.dart';
 
 /// My Requests Screen - Shows Service Requests (Concierge Matching)
 ///
 /// DATA FLOW:
 /// 1. DashboardScreen → Navigator.push to here via bottom nav
 /// 2. Displays list of service requests with status
-/// 3. Uses AppTheme colors for status indicators
+/// 3. Uses shared booking state so Admin assignment updates are visible here
 /// 4. Pending: warningColor, Assigned: successColor
 class MyRequestsScreen extends StatelessWidget {
   const MyRequestsScreen({super.key});
@@ -41,29 +43,44 @@ class MyRequestsScreen extends StatelessWidget {
             const SizedBox(height: AppTheme.spacingXL),
 
             // Service Requests List
-            _buildServiceRequestCard(
-              subject: 'Grade 10 Mathematics',
-              status: 'Pending',
-              description: 'Ethio IQ is finding your perfect match.',
-              requestedDate: '2024-01-15',
-            ),
-            const SizedBox(height: AppTheme.spacingL),
+            ValueListenableBuilder<List<BookingRequest>>(
+              valueListenable: BookingRepository.instance.requests,
+              builder: (context, requests, _) {
+                if (requests.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppTheme.spacingL,
+                    ),
+                    child: Center(
+                      child: Text(
+                        'No service requests found.',
+                        style: AppTheme.bodyMedium,
+                      ),
+                    ),
+                  );
+                }
 
-            _buildServiceRequestCard(
-              subject: 'High School English',
-              status: 'Assigned',
-              description:
-                  'Tutor Assigned: Dr. Alemayehu. Ethio IQ has verified this match.',
-              requestedDate: '2024-01-10',
-              tutorName: 'Dr. Alemayehu',
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-
-            _buildServiceRequestCard(
-              subject: 'Grade 8 Science',
-              status: 'Pending',
-              description: 'Ethio IQ is finding your perfect match.',
-              requestedDate: '2024-01-08',
+                return Column(
+                  children: requests
+                      .map(
+                        (request) => Column(
+                          children: [
+                            _buildServiceRequestCard(
+                              subject: '${request.grade} ${request.subject}',
+                              status: request.status,
+                              description: request.isPending
+                                  ? 'Ethio IQ is finding your perfect match.'
+                                  : 'Tutor Assigned: ${request.assignedTutor}. Ethio IQ has verified this match.',
+                              requestedDate: request.requestDate,
+                              tutorName: request.assignedTutor,
+                            ),
+                            const SizedBox(height: AppTheme.spacingL),
+                          ],
+                        ),
+                      )
+                      .toList(),
+                );
+              },
             ),
 
             const SizedBox(height: AppTheme.spacingXL),

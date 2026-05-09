@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:ethio_iq/core/theme/app_theme.dart';
 import 'package:ethio_iq/core/extensions/gradient_extension.dart';
-import 'package:ethio_iq/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:ethio_iq/features/auth/presentation/screens/registration_screen.dart';
+import 'package:ethio_iq/core/constants/app_constants.dart';
+import 'package:ethio_iq/features/auth/data/auth_service.dart';
+import 'package:ethio_iq/features/dashboard/presentation/screens/admin_dashboard.dart';
+import 'package:ethio_iq/features/dashboard/presentation/screens/family_dashboard.dart';
+import 'package:ethio_iq/features/dashboard/presentation/screens/tutor_dashboard.dart';
 
 /// Login Screen - Entry point of the app
-/// 
+///
 /// DATA FLOW:
 /// 1. User enters their name
 /// 2. On button press → Navigator.push to DashboardScreen
@@ -18,18 +23,21 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
-  /// Handle login - navigate to Dashboard with name
-  void _handleLogin() {
-    final name = _nameController.text.trim();
-    
-    if (name.isEmpty) {
+  /// Handle login using registered accounts
+  Future<void> _handleLogin() async {
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (phone.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Please enter your name',
+            'Please enter your phone number and password',
             style: AppTheme.bodyMedium.copyWith(color: Colors.white),
           ),
           backgroundColor: AppTheme.errorColor,
@@ -40,37 +48,57 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulate brief loading
-    Future.delayed(const Duration(milliseconds: 500), () {
+    try {
+      final user = AuthService.login(phoneNumber: phone, password: password);
+
       if (!mounted) return;
 
-      // ============================================
-      // NAVIGATOR.PUSH LOGIC - Moving between folders
-      // ============================================
-      /// Navigator.push() does:
-      /// 1. Takes current screen (LoginScreen) and pushes new route onto stack
-      /// 2. Creates DashboardScreen instance with the user's name
-      /// 3. Passes data via constructor: DashboardScreen(userName: name)
-      /// 4. User can go back with system back button
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardScreen(userName: name),
-        ),
-      ).then((_) {
-        // When returning from Dashboard, clear the field
-        if (mounted) {
-          _nameController.clear();
-        }
-      });
+      Widget dashboard;
+      switch (user.role) {
+        case UserRole.family:
+          dashboard = FamilyDashboard(user: user);
+          break;
+        case UserRole.tutor:
+          dashboard = TutorDashboard(user: user);
+          break;
+        case UserRole.admin:
+          dashboard = AdminDashboard(user: user);
+          break;
+      }
 
-      setState(() => _isLoading = false);
-    });
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => dashboard),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account not found. Please register first.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Navigate to registration screen
+  void _navigateToRegistration(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RegistrationScreen()),
+    );
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -79,48 +107,47 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppTheme.paddingStandard),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: AppTheme.spacingL),
+
               // App Logo/Title
               Container(
                 padding: const EdgeInsets.all(AppTheme.spacingXL),
                 decoration: AppTheme.softBlueGradient.toBoxDecoration(),
-                child: const Icon(
-                  Icons.school,
-                  color: Colors.white,
-                  size: 64,
-                ),
+                child: const Icon(Icons.school, color: Colors.white, size: 64),
               ),
               const SizedBox(height: AppTheme.spacingXL),
-              
+
               Text(
                 'Ethio IQ',
                 style: AppTheme.titleLarge.copyWith(
                   color: AppTheme.primaryBlue,
                   fontSize: 32,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTheme.spacingXS),
               Text(
                 'Your Gateway to Quality Education',
                 style: AppTheme.bodyMedium,
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTheme.spacingXXL),
-              
-              // Name Input Field
-              /// Uses AppTheme constants - no hardcoded colors!
+
+              // Phone Input Field
               TextField(
-                controller: _nameController,
+                controller: _phoneController,
                 decoration: InputDecoration(
-                  labelText: 'Your Name',
+                  labelText: 'Phone Number',
                   labelStyle: AppTheme.bodyMedium,
-                  hintText: 'Enter your name',
+                  hintText: 'Enter your phone number',
                   hintStyle: AppTheme.bodySmall,
                   prefixIcon: const Icon(
-                    Icons.person_outline,
+                    Icons.phone_outlined,
                     color: AppTheme.textSecondary,
                   ),
                   filled: true,
@@ -142,12 +169,59 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 style: AppTheme.bodyLarge,
-                textCapitalization: TextCapitalization.words,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: AppTheme.spacingL),
+
+              // Password Input Field
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  labelStyle: AppTheme.bodyMedium,
+                  hintText: 'Enter your password',
+                  hintStyle: AppTheme.bodySmall,
+                  prefixIcon: const Icon(
+                    Icons.lock_outlined,
+                    color: AppTheme.textSecondary,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: AppTheme.textSecondary,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                  filled: true,
+                  fillColor: AppTheme.backgroundWhite,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    borderSide: const BorderSide(
+                      color: AppTheme.primaryBlue,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                style: AppTheme.bodyLarge,
+                obscureText: _obscurePassword,
               ),
               const SizedBox(height: AppTheme.spacingXL),
-              
+
               // Login Button
-              /// Uses AppTheme.elevatedButtonStyle - no hardcoded colors!
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -163,20 +237,37 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : Text(
-                          'Get Started',
-                          style: AppTheme.buttonText,
-                        ),
+                      : Text('Login', style: AppTheme.buttonText),
                 ),
               ),
-              
               const SizedBox(height: AppTheme.spacingXL),
-              
+
               // Footer
               Text(
                 'Ethiopian Education Platform',
                 style: AppTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: AppTheme.spacingXXL),
+
+              // Sign Up Link
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("Don't have an account? ", style: AppTheme.bodyMedium),
+                  GestureDetector(
+                    onTap: () => _navigateToRegistration(context),
+                    child: Text(
+                      'Sign Up',
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.spacingL),
             ],
           ),
         ),

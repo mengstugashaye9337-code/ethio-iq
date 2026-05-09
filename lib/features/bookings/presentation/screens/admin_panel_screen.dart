@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ethio_iq/core/theme/app_theme.dart';
+import 'package:ethio_iq/features/bookings/data/booking_repository.dart';
+import 'package:ethio_iq/core/models/booking_request.dart';
 
 /// Admin Panel Screen - Broker/Admin view for managing requests
 ///
@@ -15,56 +17,7 @@ class AdminPanelScreen extends StatefulWidget {
 }
 
 class _AdminPanelScreenState extends State<AdminPanelScreen> {
-  // Sample incoming requests
-  final List<Map<String, dynamic>> incomingRequests = [
-    {
-      'id': 1,
-      'familyName': 'Kebede Family',
-      'subject': 'Mathematics',
-      'grade': 'Grade 10',
-      'location': 'Addis Ababa, Bole',
-      'requestDate': '2024-01-20',
-      'status': 'Pending',
-    },
-    {
-      'id': 2,
-      'familyName': 'Alemayehu Family',
-      'subject': 'Science',
-      'grade': 'Grade 9',
-      'location': 'Addis Ababa, Nifas Silk',
-      'requestDate': '2024-01-19',
-      'status': 'Pending',
-    },
-    {
-      'id': 3,
-      'familyName': 'Haile Family',
-      'subject': 'English',
-      'grade': 'High School',
-      'location': 'Dire Dawa',
-      'requestDate': '2024-01-18',
-      'status': 'Assigned',
-      'assignedTutor': 'Dr. Alemayehu',
-    },
-    {
-      'id': 4,
-      'familyName': 'Tadesse Family',
-      'subject': 'Coding',
-      'grade': 'High School',
-      'location': 'Addis Ababa, Gulale',
-      'requestDate': '2024-01-17',
-      'status': 'Pending',
-    },
-  ];
-
-  // Available tutors for assignment
-  final List<String> availableTutors = [
-    'Dr. Alemayehu',
-    'Hana Bekele',
-    'Meron Haile',
-    'Sami Yusuf',
-    'Abel Leul',
-    'Mengstu Yaregal',
-  ];
+  final BookingRepository _bookingRepository = BookingRepository.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -79,67 +32,78 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.paddingStandard),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppTheme.spacingL),
+      body: ValueListenableBuilder<List<BookingRequest>>(
+        valueListenable: _bookingRepository.requests,
+        builder: (context, incomingRequests, _) {
+          final pendingCount = incomingRequests
+              .where((request) => request.isPending)
+              .length
+              .toString();
+          final assignedCount = incomingRequests
+              .where((request) => !request.isPending)
+              .length
+              .toString();
 
-            // Header
-            Text('Incoming Requests', style: AppTheme.titleLarge),
-            const SizedBox(height: AppTheme.spacingS),
-            Text(
-              'Manage family requests and assign tutors',
-              style: AppTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppTheme.spacingXL),
-
-            // Stats Cards
-            Row(
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppTheme.paddingStandard),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Pending',
-                    incomingRequests
-                        .where((r) => r['status'] == 'Pending')
-                        .length
-                        .toString(),
-                    AppTheme.warningColor,
-                    Icons.schedule,
-                  ),
+                const SizedBox(height: AppTheme.spacingL),
+
+                // Header
+                Text('Incoming Requests', style: AppTheme.titleLarge),
+                const SizedBox(height: AppTheme.spacingS),
+                Text(
+                  'Manage family requests and assign tutors',
+                  style: AppTheme.bodyMedium,
                 ),
-                const SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: _buildStatCard(
-                    'Assigned',
-                    incomingRequests
-                        .where((r) => r['status'] == 'Assigned')
-                        .length
-                        .toString(),
-                    AppTheme.successColor,
-                    Icons.check_circle,
-                  ),
+                const SizedBox(height: AppTheme.spacingXL),
+
+                // Stats Cards
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Pending',
+                        pendingCount,
+                        AppTheme.warningColor,
+                        Icons.schedule,
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingL),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Assigned',
+                        assignedCount,
+                        AppTheme.successColor,
+                        Icons.check_circle,
+                      ),
+                    ),
+                  ],
                 ),
+
+                const SizedBox(height: AppTheme.spacingXL),
+
+                if (incomingRequests.isEmpty)
+                  Center(
+                    child: Text('No requests yet.', style: AppTheme.bodyMedium),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: incomingRequests.length,
+                    itemBuilder: (context, index) {
+                      return _buildRequestCard(incomingRequests[index]);
+                    },
+                  ),
+
+                const SizedBox(height: AppTheme.spacingXL),
               ],
             ),
-
-            const SizedBox(height: AppTheme.spacingXL),
-
-            // Requests List
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: incomingRequests.length,
-              itemBuilder: (context, index) {
-                final request = incomingRequests[index];
-                return _buildRequestCard(request);
-              },
-            ),
-
-            const SizedBox(height: AppTheme.spacingXL),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -171,8 +135,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   }
 
   /// Build request card
-  Widget _buildRequestCard(Map<String, dynamic> request) {
-    final isPending = request['status'] == 'Pending';
+  Widget _buildRequestCard(BookingRequest request) {
+    final isPending = request.isPending;
     final statusColor = isPending
         ? AppTheme.warningColor
         : AppTheme.successColor;
@@ -192,10 +156,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(request['familyName'], style: AppTheme.titleSmall),
+                    Text(request.familyName, style: AppTheme.titleSmall),
                     const SizedBox(height: AppTheme.spacingXS),
                     Text(
-                      '${request['subject']} - ${request['grade']}',
+                      '${request.subject} - ${request.grade}',
                       style: AppTheme.bodyMedium,
                     ),
                   ],
@@ -211,7 +175,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                   borderRadius: BorderRadius.circular(AppTheme.radiusS),
                 ),
                 child: Text(
-                  request['status'],
+                  request.status,
                   style: AppTheme.bodySmall.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.w600,
@@ -233,7 +197,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               ),
               const SizedBox(width: AppTheme.spacingXS),
               Expanded(
-                child: Text(request['location'], style: AppTheme.bodySmall),
+                child: Text(request.location, style: AppTheme.bodySmall),
               ),
             ],
           ),
@@ -248,7 +212,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 color: AppTheme.textSecondary,
               ),
               const SizedBox(width: AppTheme.spacingXS),
-              Text(request['requestDate'], style: AppTheme.bodySmall),
+              Text(request.requestDate, style: AppTheme.bodySmall),
             ],
           ),
 
@@ -270,7 +234,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                   ),
                   const SizedBox(width: AppTheme.spacingS),
                   Text(
-                    'Assigned: ${request['assignedTutor']}',
+                    'Assigned: ${request.assignedTutor}',
                     style: AppTheme.bodySmall.copyWith(
                       color: AppTheme.successColor,
                       fontWeight: FontWeight.w600,
@@ -335,10 +299,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   }
 
   /// Show dialog to assign tutor
-  void _showAssignTutorDialog(
-    BuildContext context,
-    Map<String, dynamic> request,
-  ) {
+  void _showAssignTutorDialog(BuildContext context, BookingRequest request) {
     String? selectedTutor;
 
     showDialog(
@@ -348,7 +309,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           builder: (context, setState) {
             return AlertDialog(
               title: Text(
-                'Assign Tutor to ${request['familyName']}',
+                'Assign Tutor to ${request.familyName}',
                 style: AppTheme.titleMedium,
               ),
               content: Column(
@@ -356,7 +317,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Request: ${request['subject']} - ${request['grade']}',
+                    'Request: ${request.subject} - ${request.grade}',
                     style: AppTheme.bodyMedium,
                   ),
                   const SizedBox(height: AppTheme.spacingL),
@@ -371,7 +332,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         selectedTutor = value;
                       });
                     },
-                    items: availableTutors.map((String tutor) {
+                    items: _bookingRepository.tutors.map((String tutor) {
                       return DropdownMenuItem<String>(
                         value: tutor,
                         child: Text(tutor),
@@ -391,11 +352,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                 ElevatedButton(
                   onPressed: selectedTutor != null
                       ? () {
+                          _bookingRepository.assignTutor(
+                            requestId: request.id,
+                            tutorId: selectedTutor!,
+                            tutorName: selectedTutor!,
+                          );
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Assigned $selectedTutor to ${request['familyName']}',
+                                'Assigned $selectedTutor to ${request.familyName}',
                                 style: AppTheme.bodyMedium.copyWith(
                                   color: Colors.white,
                                 ),
